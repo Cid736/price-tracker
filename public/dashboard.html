@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Price Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;
+  --accent:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149;
+  --text:#e6edf3;--muted:#8b949e;
+  font-family:'Segoe UI',system-ui,sans-serif;
+}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:20px;font-weight:700;color:var(--accent)}
+header span{font-size:12px;color:var(--muted)}
+.container{max-width:1100px;margin:0 auto;padding:28px 24px}
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px}
+.card-value{font-size:28px;font-weight:700}
+.card-value.green{color:var(--green)}
+.card-value.orange{color:var(--orange)}
+.card-value.red{color:var(--red)}
+/* PRODUCTS */
+.section-title{font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.product-grid{display:grid;gap:16px;margin-bottom:32px}
+.product-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;cursor:pointer;transition:.15s}
+.product-card:hover{border-color:var(--accent)}
+.product-card.selected{border-color:var(--accent);background:var(--surface2)}
+.product-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.product-name{font-size:15px;font-weight:600}
+.product-url{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}
+.badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.badge.ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+.badge.alert{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+.product-stats{display:flex;gap:24px}
+.stat{text-align:center}
+.stat-val{font-size:18px;font-weight:700}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase}
+.check-btn{margin-top:12px;background:var(--accent);color:#0d1117;border:none;border-radius:7px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;float:right;transition:.15s}
+.check-btn:hover{filter:brightness(1.15)}
+.check-btn:disabled{opacity:.5;cursor:default}
+/* CHART */
+#chart-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px}
+#chart-title{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--text)}
+#chart-placeholder{text-align:center;padding:60px;color:var(--muted);font-size:14px}
+canvas{max-height:320px}
+.threshold-line{display:inline-block;width:24px;height:3px;background:var(--red);border-radius:2px;vertical-align:middle;margin-right:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Price Tracker</h1>
+  <span id="last-update">Cargando...</span>
+</header>
+
+<div class="container">
+  <div class="cards">
+    <div class="card"><div class="card-label">Productos</div><div class="card-value" id="stat-total">—</div></div>
+    <div class="card"><div class="card-label">Precio mas bajo hoy</div><div class="card-value green" id="stat-min">—</div></div>
+    <div class="card"><div class="card-label">Con alerta activa</div><div class="card-value red" id="stat-alerts">—</div></div>
+    <div class="card"><div class="card-label">Comprobaciones</div><div class="card-value orange" id="stat-checks">—</div></div>
+  </div>
+
+  <div class="section-title">Productos monitorizados</div>
+  <div class="product-grid" id="product-grid">
+    <div style="color:var(--muted);font-size:14px;padding:20px">Cargando productos...</div>
+  </div>
+
+  <div class="section-title">Historial de precios</div>
+  <div id="chart-section">
+    <div id="chart-title">Selecciona un producto para ver su historial</div>
+    <div id="chart-placeholder">Haz clic en un producto arriba</div>
+    <canvas id="price-chart" style="display:none"></canvas>
+  </div>
+</div>
+
+<script>
+let chart = null;
+let products = [];
+let selectedId = null;
+
+async function loadProducts() {
+  const res  = await fetch('/api/products');
+  products   = await res.json();
+
+  document.getElementById('stat-total').textContent  = products.length;
+  document.getElementById('stat-alerts').textContent = products.filter(p => p.threshold && p.last_price <= p.threshold).length;
+  document.getElementById('stat-checks').textContent = products.reduce((s, p) => s + (p.checks || 0), 0);
+
+  const prices = products.map(p => p.last_price).filter(Boolean);
+  document.getElementById('stat-min').textContent = prices.length
+    ? Math.min(...prices).toFixed(2) + ' EUR' : '—';
+
+  document.getElementById('last-update').textContent =
+    'Ultima actualizacion: ' + new Date().toLocaleTimeString('es-ES');
+
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('product-grid');
+  if (!products.length) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:20px">Sin productos. Usa <code>python main.py add &lt;url&gt;</code> para añadir uno.</div>';
+    return;
+  }
+  grid.innerHTML = products.map(p => {
+    const hasAlert = p.threshold && p.last_price && p.last_price <= p.threshold;
+    return `
+      <div class="product-card${p.id === selectedId ? ' selected' : ''}" onclick="selectProduct(${p.id})">
+        <div class="product-header">
+          <div>
+            <div class="product-name">${esc(p.name)}</div>
+            <div class="product-url">${esc(p.url)}</div>
+          </div>
+          <span class="badge ${hasAlert ? 'alert' : 'ok'}">${hasAlert ? 'ALERTA' : 'OK'}</span>
+        </div>
+        <div class="product-stats">
+          <div class="stat"><div class="stat-val" style="color:var(--accent)">${p.last_price != null ? p.last_price.toFixed(2) + ' EUR' : '—'}</div><div class="stat-lbl">Precio actual</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--green)">${p.min_price != null ? p.min_price.toFixed(2) + ' EUR' : '—'}</div><div class="stat-lbl">Minimo</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--orange)">${p.max_price != null ? p.max_price.toFixed(2) + ' EUR' : '—'}</div><div class="stat-lbl">Maximo</div></div>
+          <div class="stat"><div class="stat-val">${p.threshold != null ? p.threshold.toFixed(2) + ' EUR' : '—'}</div><div class="stat-lbl">Umbral alerta</div></div>
+          <div class="stat"><div class="stat-val">${p.checks || 0}</div><div class="stat-lbl">Checks</div></div>
+        </div>
+        <button class="check-btn" onclick="checkNow(event, ${p.id})">Comprobar ahora</button>
+        <div style="clear:both"></div>
+      </div>`;
+  }).join('');
+}
+
+async function selectProduct(id) {
+  selectedId = id;
+  renderGrid();
+  const p   = products.find(x => x.id === id);
+  const res = await fetch(`/api/products/${id}/history`);
+  const h   = await res.json();
+
+  document.getElementById('chart-title').textContent = 'Historial: ' + p.name;
+  document.getElementById('chart-placeholder').style.display = 'none';
+  const canvas = document.getElementById('price-chart');
+  canvas.style.display = 'block';
+
+  const labels = h.map(r => {
+    const d = new Date(r.checked_at.replace(' ', 'T') + 'Z');
+    return d.toLocaleString('es-ES', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  });
+  const prices = h.map(r => r.price);
+
+  if (chart) chart.destroy();
+  chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Precio (EUR)',
+        data:  prices,
+        borderColor:     '#58a6ff',
+        backgroundColor: 'rgba(88,166,255,0.08)',
+        borderWidth: 2,
+        pointBackgroundColor: '#58a6ff',
+        pointRadius: 4,
+        tension: 0.3,
+        fill: true,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e6edf3', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ' + ctx.parsed.y.toFixed(2) + ' EUR' +
+              (p.threshold && ctx.parsed.y <= p.threshold ? '  ALERTA!' : ''),
+          },
+        },
+        annotation: p.threshold ? {
+          annotations: {
+            threshold: {
+              type: 'line', yMin: p.threshold, yMax: p.threshold,
+              borderColor: '#f85149', borderWidth: 2, borderDash: [6,4],
+              label: { content: 'Umbral ' + p.threshold + ' EUR', enabled: true, color: '#f85149', font: { size: 11 } },
+            },
+          },
+        } : {},
+      },
+      scales: {
+        x: { ticks: { color: '#8b949e', maxTicksLimit: 10 }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e', callback: v => v.toFixed(2) + ' EUR' }, grid: { color: '#21262d' } },
+      },
+    },
+  });
+}
+
+async function checkNow(e, id) {
+  e.stopPropagation();
+  const btn = e.target;
+  btn.disabled    = true;
+  btn.textContent = 'Comprobando...';
+  try {
+    const res  = await fetch(`/api/products/${id}/check`, { method: 'POST' });
+    const data = await res.json();
+    await loadProducts();
+    if (selectedId === id) selectProduct(id);
+    btn.textContent = data.alert ? 'ALERTA!' : 'OK - ' + data.price.toFixed(2);
+  } catch {
+    btn.textContent = 'Error';
+  }
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Comprobar ahora'; }, 2000);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+loadProducts();
+setInterval(loadProducts, 60000);
+</script>
+</body>
+</html>

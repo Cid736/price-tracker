@@ -78,7 +78,10 @@ def cmd_remove(a):
 def cmd_run(a):
     print(f'Comprobando cada {a.interval} minutos. Ctrl+C para parar.\n')
     while True:
-        cmd_check(a)
+        try:
+            cmd_check(a)
+        except Exception as e:
+            print(f'[!] Error en ciclo de comprobacion: {e}')
         time.sleep(a.interval * 60)
 
 def main():

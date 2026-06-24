@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-import re
+import re, ipaddress
+from urllib.parse import urlparse
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
@@ -30,7 +31,28 @@ def _extract(html, selector=None):
                 return p
     return None
 
+def _is_safe_url(url: str) -> bool:
+    try:
+        p = urlparse(url)
+        if p.scheme not in ('http', 'https'):
+            return False
+        host = (p.hostname or '').lower()
+        if not host or host == 'localhost':
+            return False
+        try:
+            addr = ipaddress.ip_address(host)
+            if addr.is_private or addr.is_loopback or addr.is_link_local:
+                return False
+        except ValueError:
+            pass  # hostname, not IP — allow
+        return True
+    except Exception:
+        return False
+
 def fetch_price(url, selector=None):
+    if not _is_safe_url(url):
+        print(f'  [!] URL bloqueada (privada o inválida): {url}')
+        return None
     try:
         r = requests.get(url, headers=HEADERS, timeout=15)
         r.raise_for_status()

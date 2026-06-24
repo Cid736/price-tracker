@@ -17,8 +17,11 @@ def send_alert(name, price, url, threshold):
         f'Tu umbral: {threshold:.2f} EUR\n\n'
         f'[Ver producto]({url})'
     )
-    requests.post(
-        f'https://api.telegram.org/bot{_TOKEN}/sendMessage',
-        json={'chat_id': _CHAT_ID, 'text': text, 'parse_mode': 'Markdown'},
-        timeout=10,
-    )
+    try:
+        requests.post(
+            f'https://api.telegram.org/bot{_TOKEN}/sendMessage',
+            json={'chat_id': _CHAT_ID, 'text': text, 'parse_mode': 'Markdown'},
+            timeout=10,
+        )
+    except Exception:
+        pass

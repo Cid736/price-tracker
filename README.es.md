@@ -34,3 +34,11 @@ python main.py run --interval 60
 - Soporte para selector CSS personalizado para cualquier layout
 - Historial de precios en SQLite
 - Alerta por Telegram cuando el precio baja del umbral
+
+## Historial de versiones
+
+**v0.1.1** — 2026-06-24
+- Fix: añadido try/except en el notificador de Telegram para evitar crash no controlado si la red falla
+
+**v0.1.0** — 2026-05-01
+- Publicación inicial: scraping de precios, alertas por umbral, historial SQLite, modo demonio

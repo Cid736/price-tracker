@@ -34,3 +34,11 @@ python main.py run --interval 60
 - Custom CSS selector support for any site layout
 - SQLite price history
 - Telegram alert when price drops below threshold
+
+## Changelog
+
+**v0.1.1** — 2026-06-24
+- Fix: add try/except to Telegram notifier to prevent unhandled crash on network error
+
+**v0.1.0** — 2026-05-01
+- Initial release: price scraping, threshold alerts, SQLite history, daemon mode

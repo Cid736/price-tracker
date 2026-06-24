@@ -38,7 +38,8 @@ python main.py run --interval 60
 ## Changelog
 
 **v0.1.1** — 2026-06-24
-- Fix: add try/except to Telegram notifier to prevent unhandled crash on network error
+- Security: SSRF protection on user-supplied URLs — private IPs, loopback and non-HTTP schemes are blocked
+- Fix: Telegram notifier now catches network errors instead of crashing
 
 **v0.1.0** — 2026-05-01
 - Initial release: price scraping, threshold alerts, SQLite history, daemon mode

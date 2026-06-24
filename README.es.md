@@ -38,7 +38,8 @@ python main.py run --interval 60
 ## Historial de versiones
 
 **v0.1.1** — 2026-06-24
-- Fix: añadido try/except en el notificador de Telegram para evitar crash no controlado si la red falla
+- Seguridad: protección SSRF en URLs suministradas por el usuario — IPs privadas, loopback y esquemas no-HTTP son bloqueados
+- Fix: el notificador de Telegram ahora captura errores de red en lugar de caerse
 
 **v0.1.0** — 2026-05-01
 - Publicación inicial: scraping de precios, alertas por umbral, historial SQLite, modo demonio

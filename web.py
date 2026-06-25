@@ -3,17 +3,25 @@ import os
 from db import init_db, get_conn
 
 app = Flask(__name__, static_folder='public')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-_LOCAL_ADDRS = {'127.0.0.1', '::1', '::ffff:127.0.0.1'}
 CONTROL_TOKEN = os.environ.get('CONTROL_TOKEN', '')
 
+if not CONTROL_TOKEN:
+    raise RuntimeError("CONTROL_TOKEN must be set in .env before starting price-tracker")
 
-def _check_local():
-    if CONTROL_TOKEN:
-        if request.headers.get('X-Control-Token') != CONTROL_TOKEN:
-            abort(403)
-    elif request.remote_addr not in _LOCAL_ADDRS:
+
+def _check_control():
+    if request.headers.get('X-Control-Token') != CONTROL_TOKEN:
         abort(403)
+
+
+@app.after_request
+def security_headers(r):
+    r.headers['X-Frame-Options'] = 'DENY'
+    r.headers['X-Content-Type-Options'] = 'nosniff'
+    r.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return r
 
 @app.route('/')
 def index():
@@ -43,7 +51,7 @@ def history(pid):
 
 @app.route('/api/products/<int:pid>/check', methods=['POST'])
 def check_one(pid):
-    _check_local()
+    _check_control()
     from tracker import fetch_price
     with get_conn() as c:
         p = c.execute('SELECT * FROM products WHERE id=? AND active=1', (pid,)).fetchone()

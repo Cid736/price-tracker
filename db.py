@@ -1,6 +1,7 @@
 import sqlite3
+from pathlib import Path
 
-DB_PATH = 'prices.db'
+DB_PATH = Path(__file__).parent / 'prices.db'
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)

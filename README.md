@@ -105,7 +105,7 @@ python main.py run --interval 60
 
 Las revisiones de seguridad automatizadas utilizan [Claude](https://claude.ai) (Anthropic AI) y se ejecutan en cada cambio significativo para detectar vulnerabilidades, patrones inseguros y riesgos en dependencias. Los hallazgos se registran en [`BUGLOG.md`](BUGLOG.md).
 
-**Última revisión:** 2026-06-25 — No se encontraron vulnerabilidades significativas.
+**Última revisión:** 2026-06-25 (rev 3) — 1 vulnerabilidad encontrada (media) — parcheada. Revisión 3: `/api/products/<pid>/check` protegido — solo accesible desde localhost o con `CONTROL_TOKEN`.
 
 ¿Encontraste una vulnerabilidad? Abre un issue o contacta directamente.
 ## Licencia

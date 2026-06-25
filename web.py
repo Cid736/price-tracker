@@ -1,8 +1,19 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request, abort
 import os
 from db import init_db, get_conn
 
 app = Flask(__name__, static_folder='public')
+
+_LOCAL_ADDRS = {'127.0.0.1', '::1', '::ffff:127.0.0.1'}
+CONTROL_TOKEN = os.environ.get('CONTROL_TOKEN', '')
+
+
+def _check_local():
+    if CONTROL_TOKEN:
+        if request.headers.get('X-Control-Token') != CONTROL_TOKEN:
+            abort(403)
+    elif request.remote_addr not in _LOCAL_ADDRS:
+        abort(403)
 
 @app.route('/')
 def index():
@@ -32,6 +43,7 @@ def history(pid):
 
 @app.route('/api/products/<int:pid>/check', methods=['POST'])
 def check_one(pid):
+    _check_local()
     from tracker import fetch_price
     with get_conn() as c:
         p = c.execute('SELECT * FROM products WHERE id=? AND active=1', (pid,)).fetchone()

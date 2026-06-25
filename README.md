@@ -52,6 +52,12 @@ python main.py run --interval 60
 **v0.1.0** — 2026-05-01
 - Initial release: price scraping, threshold alerts, SQLite history, daemon mode
 
+## Security
+
+Automated security reviews are powered by [Claude](https://claude.ai) (Anthropic AI) and run on every significant change to detect vulnerabilities, insecure patterns and dependency risks. Findings are tracked in `BUGLOG.md`.
+
+Found a vulnerability? Open an issue or contact directly.
+
 ---
 
 <a name="español"></a>
@@ -93,6 +99,11 @@ python main.py run --interval 60
 - Historial de precios en SQLite
 - Alerta Telegram cuando el precio baja del umbral
 
+## Seguridad
+
+Las revisiones de seguridad automatizadas utilizan [Claude](https://claude.ai) (Anthropic AI) y se ejecutan en cada cambio significativo para detectar vulnerabilidades, patrones inseguros y riesgos en dependencias. Los hallazgos se registran en `BUGLOG.md`.
+
+¿Encontraste una vulnerabilidad? Abre un issue o contacta directamente.
 ## Licencia
 
 MIT

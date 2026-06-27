@@ -31,6 +31,26 @@ def _extract(html, selector=None):
                 return p
     return None
 
+def _resolve_safe(host: str) -> bool:
+    """Return True only if ALL resolved IPs for host are public/routable."""
+    import socket
+    try:
+        results = socket.getaddrinfo(host, None)
+    except Exception:
+        return False
+    for res in results:
+        ip_str = res[4][0]
+        try:
+            addr = ipaddress.ip_address(ip_str)
+            if (addr.is_private or addr.is_loopback or addr.is_link_local
+                    or addr.is_reserved or addr.is_multicast
+                    or addr.is_unspecified):
+                return False
+        except ValueError:
+            return False
+    return bool(results)
+
+
 def _is_safe_url(url: str) -> bool:
     try:
         p = urlparse(url)
@@ -39,13 +59,19 @@ def _is_safe_url(url: str) -> bool:
         host = (p.hostname or '').lower()
         if not host or host == 'localhost':
             return False
+        # Reject bare IP literals that are private
         try:
             addr = ipaddress.ip_address(host)
-            if addr.is_private or addr.is_loopback or addr.is_link_local:
+            if (addr.is_private or addr.is_loopback or addr.is_link_local
+                    or addr.is_reserved or addr.is_multicast
+                    or addr.is_unspecified):
                 return False
+            # IP literal is public — allow
+            return True
         except ValueError:
-            pass  # hostname, not IP — allow
-        return True
+            pass  # hostname, not IP literal — fall through to DNS check
+        # DNS rebinding protection: resolve now and verify all IPs are public
+        return _resolve_safe(host)
     except Exception:
         return False
 

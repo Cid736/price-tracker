@@ -21,6 +21,14 @@ def security_headers(r):
     r.headers['X-Frame-Options'] = 'DENY'
     r.headers['X-Content-Type-Options'] = 'nosniff'
     r.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    r.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none';"
+    )
     return r
 
 @app.route('/')

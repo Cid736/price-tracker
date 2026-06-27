@@ -56,7 +56,14 @@ python main.py run --interval 60
 
 Automated security reviews are powered by [Claude](https://claude.ai) (Anthropic AI) and run on every significant change to detect vulnerabilities, insecure patterns and dependency risks. Findings are tracked in [`BUGLOG.md`](BUGLOG.md).
 
-**Last review:** 2026-06-25 — No significant issues found.
+**Last review:** 2026-06-28 — 4 issues found (1 high, 1 medium, 2 low) — all patched.
+
+| Severity | File | Finding | Status |
+|----------|------|---------|--------|
+| HIGH | `tracker.py` | DNS rebinding bypass — hostname-based SSRF protection was bypassed by a hostname that resolves to a private IP. Fixed: all resolved IPs are now checked against RFC-1918/loopback ranges at request time. | Patched |
+| MEDIUM | `notifier.py` | Telegram MarkdownV1 injection — attacker-controlled product name or URL could inject bold/link syntax. Fixed: switched to MarkdownV2 with full escaping of all user-supplied fields. | Patched |
+| LOW | `web.py` | Missing `Content-Security-Policy` header. Fixed: CSP added restricting scripts to `self` and jsdelivr.net. | Patched |
+| LOW | `requirements.txt` | `requests==2.31.0` had known CVEs; `flask` and `lxml` were missing (undeclared deps). Fixed: pinned to secure versions. | Patched |
 
 Found a vulnerability? Open an issue or contact directly.
 
@@ -105,7 +112,14 @@ python main.py run --interval 60
 
 Las revisiones de seguridad automatizadas utilizan [Claude](https://claude.ai) (Anthropic AI) y se ejecutan en cada cambio significativo para detectar vulnerabilidades, patrones inseguros y riesgos en dependencias. Los hallazgos se registran en [`BUGLOG.md`](BUGLOG.md).
 
-**Última revisión:** 2026-06-25 (rev 3) — 1 vulnerabilidad encontrada (media) — parcheada. Revisión 3: `/api/products/<pid>/check` protegido — solo accesible desde localhost o con `CONTROL_TOKEN`.
+**Última revisión:** 2026-06-28 — 4 vulnerabilidades encontradas (1 alta, 1 media, 2 bajas) — todas parcheadas.
+
+| Severidad | Archivo | Hallazgo | Estado |
+|-----------|---------|---------|--------|
+| ALTA | `tracker.py` | Bypass DNS rebinding — la protección SSRF basada en hostname se podía eludir con un hostname que resuelve a IP privada. Fix: todos los IPs resueltos se verifican contra rangos RFC-1918/loopback en el momento de la petición. | Parcheado |
+| MEDIA | `notifier.py` | Inyección Telegram MarkdownV1 — nombre de producto o URL controlado por el atacante podía inyectar sintaxis bold/link. Fix: migrado a MarkdownV2 con escape completo de todos los campos controlados por el usuario. | Parcheado |
+| BAJA | `web.py` | Cabecera `Content-Security-Policy` ausente. Fix: CSP añadida restringiendo scripts a `self` y jsdelivr.net. | Parcheado |
+| BAJA | `requirements.txt` | `requests==2.31.0` con CVEs conocidos; `flask` y `lxml` sin declarar. Fix: versiones seguras fijadas. | Parcheado |
 
 ¿Encontraste una vulnerabilidad? Abre un issue o contacta directamente.
 ## Licencia
